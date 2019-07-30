@@ -1,0 +1,42 @@
+---
+title: "Life Expectancy Analysis"
+author: "George Lee (georgel4), Wenyi Hu (wenyihu2), Nate Hochstetler (nhh3)"
+date: "8/5/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+### Background Information
+
+This dataset has information pulled from the Global Health Observatory (GHO) data repository under the World Health Organization (WHO), with additional country specific information collected by the United Nations (UN). There are 22 variables and 2938 observations in this dataset, with 20 of those variables being predicting variables.
+
+[Dataset Citation](https://www.kaggle.com/kumarajarshi/life-expectancy-who#Life%20Expectancy%20Data.csv)
+
+### Description of Dataset
+
+This dataset describes life expectancy of 193 different countries, along with various other factors that may impact life expectancy. Some of these additional factors include, but are not limited to: mortality rate of adults and infants, alcohol consumption, immunizations of specific diseases, deaths by specific diseases, Gross Domestic Product, and population of the country. All of the data relates back to a specific country. 
+
+### Dataset Interest
+
+Anyone who has stayed up to date with the news will have likely heard about the recent "anti-vaxers" movement. Essentially, people are starting to believe that vaccinations actually have a negative impact on quality of life and life expectancy, and can also lead to autism. While many of these disadvantages of not being immunized, especially the connection to autism, have been disproven, many still do not get vaccinated. Certainly, everyone is entitled to their own choices and beliefs, so we are hoping that an analysis of this dataset may shed some scientific light on both sides of the arguments, right or wrong. While there have been many datasets about life expectancies, there are not many that accompany immunization statistics with it. 
+
+Furthermore, we hope, through studying and modeling the relationship between life expectancy and various factors, to identify some of the biggest factors that influence life expectancy. Through this, we could demonstrate the biggest leverage that an under-developed country could take action on fairly easily to improve the life expectancy of their people.
+
+# Methods
+
+Load the data into R
+```{r}
+life_expectancy <- read.csv('Life Expectancy Data.csv')
+```
+
+# Results
+
+# Discussion
+
+# Appendix
+
