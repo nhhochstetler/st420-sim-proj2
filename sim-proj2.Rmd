@@ -34,6 +34,35 @@ Load the data into R
 life_expectancy <- read.csv('Life Expectancy Data.csv')
 ```
 
+Clean up source data by excluding records with NA value in the columns of interest. Also exclude records with unreasonable records. For example Income.composition.of.resources = 0 does not seem reasonable comparing to the overall distribution.
+```{r}
+## remove rows with NA in Life.expectancy
+subdata=subset(life_expectancy,!is.na(life_expectancy$Life.expectancy))
+## remove rows with NA in Adult.Mortality
+subdata=subset(subdata,!is.na(subdata$Adult.Mortality))
+## remove rows with NA in Alcohol
+subdata=subset(subdata,!is.na(subdata$Alcohol))
+## remove rows with NA in BMI
+subdata=subset(subdata,!is.na(subdata$BMI))
+## remove rows with NA in Polio
+subdata=subset(subdata,!is.na(subdata$Polio))
+## remove rows with NA in Diphtheria
+subdata=subset(subdata,!is.na(subdata$Diphtheria))
+## remove rows with NA in GDP
+subdata=subset(subdata,!is.na(subdata$GDP))
+## remove rows with NA in Income.composition.of.resources
+subdata=subset(subdata,!is.na(subdata$Income.composition.of.resources))
+## remove rows with NA in Schooling
+subdata=subset(subdata,!is.na(subdata$Schooling))
+## remove rows with Income.composition.of.resources=0
+subdata=subset(subdata,subdata$Income.composition.of.resources!=0)
+## remove rows with BMI less than 8
+subdata=subset(subdata,subdata$BMI>8)
+
+## create a detaset that contains columns that believe have predicting power of life expectancy
+life_exp_good_data=subdata[,c(2,3,4,5, 7,8, 11,13,15,16,17, 21, 22)]
+```
+
 # Results
 
 # Discussion
