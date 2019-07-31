@@ -63,6 +63,22 @@ subdata=subset(subdata,subdata$BMI>8)
 life_exp_good_data=subdata[,c(2,3,4,5, 7,8, 11,13,15,16,17, 21, 22)]
 ```
 
+Fit an additive linear regression model for all available predictors
+```{r}
+le_add_model <- lm(Life.expectancy ~ ., data = life_exp_good_data)
+```
+
+Fit an interaction linear regression model up to all 2 way interactions for all available predictors
+```{r}
+le_inter_model <- lm(Life.expectancy ~ . * ., data = life_exp_good_data)
+```
+
+Fit an interaction linear regression model up to all 3 way interactions for all available predictors
+```{r}
+le_inter_3_model <- lm(Life.expectancy ~ . * . * ., data = life_exp_good_data)
+```
+
+
 # Results
 
 # Discussion
