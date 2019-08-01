@@ -50,34 +50,25 @@ pairs(life_expectancy[, c(4, 20, 21, 22)], col = 'dodgerblue')
 
 Clean up source data by excluding records with NA value in the columns of interest. Also exclude records with unreasonable records. For example Income.composition.of.resources = 0 does not seem reasonable comparing to the overall distribution.
 ```{r}
-## remove rows with NA in Life.expectancy
-subdata=subset(life_expectancy,!is.na(life_expectancy$Life.expectancy))
-## remove rows with NA in Adult.Mortality
-subdata=subset(subdata,!is.na(subdata$Adult.Mortality))
-## remove rows with NA in Alcohol
-subdata=subset(subdata,!is.na(subdata$Alcohol))
-## remove rows with NA in BMI
-subdata=subset(subdata,!is.na(subdata$BMI))
-## remove rows with NA in Polio
-subdata=subset(subdata,!is.na(subdata$Polio))
-## remove rows with NA in Diphtheria
-subdata=subset(subdata,!is.na(subdata$Diphtheria))
-## remove rows with NA in GDP
-subdata=subset(subdata,!is.na(subdata$GDP))
-## remove rows with NA in Income.composition.of.resources
-subdata=subset(subdata,!is.na(subdata$Income.composition.of.resources))
-## remove rows with NA in Schooling
-subdata=subset(subdata,!is.na(subdata$Schooling))
+## remove rows with NA 
+subdata = life_expectancy[complete.cases(life_expectancy), ]
 ## remove rows with Income.composition.of.resources=0
-subdata=subset(subdata,subdata$Income.composition.of.resources!=0)
+subdata = subset(subdata,subdata$Income.composition.of.resources!=0)
 ## remove rows with BMI less than 8
-subdata=subset(subdata,subdata$BMI>8)
+subdata = subset(subdata,subdata$BMI>8)
 
+## remove country from the data set as it is not a predictor we want to include
+life_exp_clean_data = subdata[, -1]
 ## create a detaset that contains columns that believe have predicting power of life expectancy
-life_exp_good_data=subdata[,c(2, 3, 4, 5, 7, 8, 11, 13, 15, 16, 17, 21, 22)]
+life_exp_good_data = subdata[,c(2, 3, 4, 5, 7, 8, 11, 13, 15, 16, 17, 21, 22)]
 ```
 
 Fit an additive linear regression model for all available predictors
+```{r}
+le_full_add_model <- lm(Life.expectancy ~ ., data = life_exp_clean_data)
+```
+
+Fit an additive linear regression model for all predictors we manually analyzed as useful
 ```{r}
 le_add_model <- lm(Life.expectancy ~ ., data = life_exp_good_data)
 ```
@@ -87,29 +78,42 @@ Fit an interaction linear regression model up to all 2 way interactions for all 
 le_inter_model <- lm(Life.expectancy ~ . * ., data = life_exp_good_data)
 ```
 
-Fit an interaction linear regression model up to all 3 way interactions for all available predictors
-```{r}
-le_inter_3_model <- lm(Life.expectancy ~ . * . * ., data = life_exp_good_data)
-```
-
-
 ### Model Diagnostics
 
+#### Leverage
 Identify high leverage data points
 ```{r}
+full_add_lev <- hatvalues(le_full_add_model) > 2 * mean(hatvalues(le_full_add_model))
 add_lev <- hatvalues(le_add_model) > 2 * mean(hatvalues(le_add_model))
 inter_lev <- hatvalues(le_inter_model) > 2 * mean(hatvalues(le_inter_model))
-inter_3_lev <- hatvalues(le_inter_3_model) > 2 * mean(hatvalues(le_inter_3_model))
 ```
 
+#### Influential
 Identify influential data points
 ```{r}
+full_add_inf <- cooks.distance(le_full_add_model) > 4 / length(cooks.distance(le_full_add_model))
 add_inf <- cooks.distance(le_add_model) > 4 / length(cooks.distance(le_add_model))
 inter_inf <- cooks.distance(le_inter_model) > 4 / length(cooks.distance(le_inter_model))
-inter_3_inf <- cooks.distance(le_inter_3_model) > 4 / length(cooks.distance(le_inter_3_model))
 ```
 
-Check normality assumption for the additive model
+Refit models without high leverage or influential data poitns
+```{r}
+le_full_add_model <- lm(Life.expectancy ~ ., data = life_exp_clean_data, subset = !full_add_lev | !full_add_inf)
+le_add_model <- lm(Life.expectancy ~ ., data = life_exp_good_data, subset = !add_lev | !add_inf)
+le_inter_model <- lm(Life.expectancy ~ . * ., data = life_exp_good_data, subset = !add_lev | !add_inf)
+```
+
+#### Normality 
+
+Check normality assumption for the full additive model
+```{r}
+qqnorm(resid(le_full_add_model))
+qqline(resid(le_full_add_model))
+
+shapiro.test(resid(le_full_add_model))
+```
+
+Check normality assumption for the manually selected additive model
 ```{r}
 qqnorm(resid(le_add_model))
 qqline(resid(le_add_model))
@@ -125,16 +129,15 @@ qqline(resid(le_inter_model))
 shapiro.test(resid(le_inter_model))
 ```
 
-Check normality assumption for the 3 way interaction model
+#### Equal Variance
+Check equal variance assumption for the full additive model
 ```{r}
-qqnorm(resid(le_inter_3_model))
-qqline(resid(le_inter_3_model))
-
-shapiro.test(resid(le_inter_3_model))
+plot(fitted(le_full_add_model), resid(le_full_add_model))
+bptest(le_full_add_model)
+hist(resid(le_full_add_model))
 ```
 
-
-Check equal variance assumption for the additive model
+Check equal variance assumption for the manually selected additive model
 ```{r}
 plot(fitted(le_add_model), resid(le_add_model))
 bptest(le_add_model)
@@ -148,16 +151,27 @@ bptest(le_inter_model)
 hist(resid(le_inter_model))
 ```
 
-Check equal variance assumption for the 3 way interaction model
+### Model Selection
+
+Perform backwards AIC to figure out which predictors are useful
 ```{r}
-plot(fitted(le_inter_3_model), resid(le_inter_3_model))
-bptest(le_inter_3_model)
-hist(resid(le_inter_3_model))
+le_full_add_model_sel <- step(le_full_add_model, trace = 0)
+le_add_model_sel <- step(le_add_model, trace = 0)
+le_inter_model_sel <- step(le_inter_model, trace = 0)
 ```
+
+Perform an ANOVA test to see which model is preferred between the manually selected additive model and the manually selected 2 way interaction model, with an $\alpha = .05$
+```{r}
+anova(le_add_model_sel, le_inter_model_sel)[2, 'Pr(>F)'] < .05
+```
+
+The larger, 2 way interaction model, is preferred.
 
 # Results
 
 # Discussion
+
+The first thing we did was create a pairs plot for every predictor as it related to life expectancy, the response we chose to use for this project. Looking at the pairs plot, we selected a series of predictors that we felt were useful to the dataset, but also predictors that we thought would be interesting to analyze. Then, we decided to fit 3 models: an additive model with all available predictors, an additive model with the predictors we manually selected, and a 2 way interaction model with the manually selected predictors, as well. We chose to do this because we knew the dataset had too many predictors to be able to accurately fit anything beyond an additive model. So, we included the full additive model for comparison, but were ultimately focused on the predictors that we manually selected.
 
 # Appendix
 
