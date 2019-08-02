@@ -31,6 +31,8 @@ Furthermore, we hope, through studying and modeling the relationship between lif
 Import libraries to use
 ```{r, message=FALSE}
 library(lmtest)
+library(faraway)
+library(readr)
 ```
 
 Load the data into R
@@ -56,6 +58,24 @@ subdata = life_expectancy[complete.cases(life_expectancy), ]
 subdata = subset(subdata,subdata$Income.composition.of.resources!=0)
 ## remove rows with BMI less than 8
 subdata = subset(subdata,subdata$BMI>8)
+
+country_unique=unique(subdata$Country)
+country_length=length(country_unique)
+
+### clean up records that has < 20%*average Adult.Mortality of that country or >5 * average Adult.Mortality of that country
+country_avg_adult_mort=data.frame(country=as.character(rep("",country_length)),
+                                  avg_adult_mort=rep(0,country_length))
+country_avg_adult_mort$country=as.character(country_avg_adult_mort$country)
+
+##for each iteration we calculate avg adult mortality for each country and exclude abnormal records
+for (i in 1:country_length) {
+  country_avg_adult_mort$country[i]=country_unique[i]
+  country_avg_adult_mort$avg_adult_mort[i]=mean(subdata$Adult.Mortality[ subdata$Country == country_unique[i] ])
+  
+  subdata=subdata[ !(subdata$Country == country_unique[i] & (
+    subdata$Adult.Mortality < (country_avg_adult_mort$avg_adult_mort[i]/5)
+    | subdata$Adult.Mortality > (country_avg_adult_mort$avg_adult_mort[i]*5))),]
+}
 
 ## remove country from the data set as it is not a predictor we want to include
 life_exp_clean_data = subdata[, -1]
@@ -150,6 +170,17 @@ plot(fitted(le_inter_model), resid(le_inter_model))
 bptest(le_inter_model)
 hist(resid(le_inter_model))
 ```
+
+### Collinearity
+
+Calculate the variance inflation factor for the predictors in each model
+```{r, warning=FALSE}
+vif_full_add <- vif(le_full_add_model)
+vif_add <- vif(le_add_model)
+vif_inter <- vif(le_inter_model)
+```
+
+
 
 ### Model Selection
 
