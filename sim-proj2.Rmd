@@ -33,6 +33,7 @@ Import libraries to use
 library(lmtest)
 library(faraway)
 library(readr)
+library(knitr)
 ```
 
 Load the data into R
@@ -222,7 +223,13 @@ nrow(subdata)
 ## full data excluding year, percentage.expenditure, GDP and Population
 life_exp_full_data = subdata[,c(-1,-8,-17,-18)]
 ## Selected columns
-life_exp_clean_data = subdata[,c(2, 3, 4, 5, 7, 11, 13, 15, 16, 21, 22)]
+life_exp_clean_data = subdata[,c(2, 3, 4, 5, 7, 11, 13, 15, 16, 21，22)]
+
+## Selected potential predictor to perform exhaustive search for models that perform well and pass assumption tests. ## Therefore not including schooling because it is corelated with Income.composition.of.resources
+## Also excluded Diphtharia due to colinearity with Polio
+life_exp_search_data = subdata[,c(2, 3, 4, 5, 7, 11, 13, 16, 21)]
+
+pairs(subdata[,c(4,13,15)])
 ```
 
 
@@ -239,6 +246,91 @@ le_add_model <- lm(Life.expectancy ~ ., data = life_exp_clean_data)
 Fit an interaction linear regression model up to all 2 way interactions for all available predictors
 ```{r}
 le_inter_model <- lm(Life.expectancy ~ . * ., data = life_exp_clean_data)
+```
+Perform backwards AIC to shrink number of predictors from initial full models
+```{r}
+le_full_add_model_sel <- step(le_full_add_model, trace = 0)
+le_add_model_sel <- step(le_add_model, trace = 0)
+le_inter_model_sel <- step(le_inter_model, trace = 0)
+```
+
+##### High level summary of assumption violation and p-Value of initially fitted model
+
+```{r}
+report_frame=data.frame(
+  Model_Name=c("Full_add","Full_manual_add","Full_int","AIC_add","AIC_manual_add","AIC_int"),
+  R_squared=c(summary(le_full_add_model)$r.squared,
+              summary(le_add_model)$r.squared,
+              summary(le_inter_model)$r.squared,
+              summary(le_full_add_model_sel)$r.squared,
+              summary(le_add_model_sel)$r.squared,
+              summary(le_inter_model_sel)$r.squared),
+  BP_test_pvalue=c(bptest(le_full_add_model)$p.value,
+              bptest(le_add_model)$p.value,
+              bptest(le_inter_model)$p.value,
+              bptest(le_full_add_model_sel)$p.value,
+              bptest(le_add_model_sel)$p.value,
+              bptest(le_inter_model_sel)$p.value),
+  shapiro_test=c(shapiro.test(resid(le_full_add_model))$p.value,
+              shapiro.test(resid(le_add_model))$p.value,
+              shapiro.test(resid(le_inter_model))$p.value,
+              shapiro.test(resid(le_full_add_model_sel))$p.value,
+              shapiro.test(resid(le_add_model_sel))$p.value,
+              shapiro.test(resid(le_inter_model_sel))$p.value)
+)
+kable(report_frame)
+```
+
+#### Despite the high r.squared value overall, all the models failed BP test and Shapiro test which indiate that the homoscedasticity assumption and normality assumption are violated. In below section, we attempt to search for a model from all possible combinations of selected additive predictors that has fair r.sqaure and passes both assumption tests.
+
+```{r}
+
+## prepare a list of input formulas that captures all permutation and combination of predictors from the columns that we selected. 
+call_list=rep("",250)
+predictor_list=names(life_exp_search_data)
+predictor_list=predictor_list[-3]
+counter=1
+for (i in 1:length(predictor_list)){
+  permutation_predictors=t(combn(predictor_list,i))
+  for (j in 1:nrow(permutation_predictors)){
+    new_set="Life.expectancy ~ "
+    for (k in 1:length(permutation_predictors[j,])){
+      new_set=paste(new_set," ",permutation_predictors[j,k],"+")
+    }
+    call_list[counter]=substring(new_set,1,nchar(new_set)-1)
+    counter=counter+1
+  }
+}
+
+## create a result data frame that contains model r.sqaures, bptest pvalue and shapiro test pvalue
+result_frame=data.frame(model=as.character(rep("",length(call_list))),
+                        r_sq=rep(0,length(call_list)),
+                        bp_pval=rep(0,length(call_list)),
+                        shapiro_pval=rep(0,length(call_list)))
+result_frame$model=as.character(result_frame$model)
+
+for (i in 1:length(call_list)){
+  mod=lm(call_list[i],data=life_exp_search_data)
+  result_frame$model[i]=call_list[i]
+  result_frame$r_sq[i]=summary(mod)$r.squared
+  result_frame$bp_pval[i]=bptest(mod)$p.value
+  result_frame$shapiro_pval[i]=shapiro.test(resid(mod))$p.value
+}
+
+```
+
+#### We searched through 255 combinations of models and only very few models that pass BP test and none seems to pass Shapiro test. So We proceed to pick one from the few models that pass the BP test.
+
+```{r}
+hist(result_frame$bp_pval)
+hist(result_frame$shapiro_pval)
+kable(result_frame[result_frame$bp_pval>0.05,])
+```
+
+#### We choose the model with predictor Year + Status + BMI + Polio + HIV.AIDS + Income.composition.of.resources with 0.835 r_square value and barely passing the BP test as our 7th candidate model
+
+```{r}
+BP_search_mod=lm(Life.expectancy ~ Year + Status + BMI + Polio + HIV.AIDS + Income.composition.of.resources,data=life_exp_search_data)
 ```
 
 ### Model Diagnostics
