@@ -50,9 +50,10 @@ pairs(life_expectancy[, c(4, 13, 14, 15, 16)], col = 'dodgerblue')
 pairs(life_expectancy[, c(4, 17, 18, 19)], col = 'dodgerblue')
 pairs(life_expectancy[, c(4, 20, 21, 22)], col = 'dodgerblue')
 ```
+
 ## Data Cleaning
 
-#### Clean up source data by excluding records with NA value in the columns of interest. Also exclude records with unreasonable records. For example Income.composition.of.resources = 0 does not seem reasonable comparing to the overall distribution.
+Clean up source data by excluding records with NA value in the columns of interest. Also exclude records with unreasonable records. For example Income.composition.of.resources = 0 does not seem reasonable comparing to the overall distribution.
 
 ```{r}
 ## remove rows with NA 
@@ -63,9 +64,9 @@ subdata = subset(subdata,subdata$Income.composition.of.resources!=0)
 subdata = subset(subdata,subdata$BMI>8)
 ```
 
-#### Additionally upon further investigating the data, we found several data issues with some columns where data varies greatly for the same country year over year. In many cases, it appears to be input error (i.e. missing a digit). We try to eliminate records that are out of ordinary by comparing to the average of the country for some columns. But there are some columns that are so messy that we deem beyond repair therefore excluded from our analysis.
+Additionally upon further investigating the data, we found several data issues with some columns where data varies greatly for the same country year over year. In many cases, it appears to be input error (i.e. missing a digit). We try to eliminate records that are out of ordinary by comparing to the average of the country for some columns. But there are some columns that are so messy that we deem beyond repair therefore excluded from our analysis.
 
-##### Below are the plots showing we have discovered data issue where some values appear to be miss coded and miss a digit. We have come up with a method to exclude values that are way too off comparing to other years within the same country 
+Below are the plots showing we have discovered data issue where some values appear to be miss coded and miss a digit. We have come up with a method to exclude values that are way too off comparing to other years within the same country 
 
 ```{r}
 ##View(subdata[1:100,])
@@ -77,7 +78,7 @@ plot(subdata$Year[subdata$Country=="Swaziland"],subdata$Hepatitis.B[subdata$Coun
 
 ```
 
-##### Below are the plots showing we have discovered the value of some columns appear to be corrupted beyond repair and we will exclude those columns in our modeling. As an example here are the GDP and population, percentage.expenditure on health data of Australia over the years. The GDP data appears to be broken and the percentage.expenditure on health seems to be related and is also broken.
+Below are the plots showing we have discovered the value of some columns appear to be corrupted beyond repair and we will exclude those columns in our modeling. As an example here are the GDP and population, percentage.expenditure on health data of Australia over the years. The GDP data appears to be broken and the percentage.expenditure on health seems to be related and is also broken.
 
 ```{r}
 par(mfrow=c(1,3))
@@ -89,7 +90,7 @@ plot(subdata$Year[subdata$Country=="Australia"],subdata$percentage.expenditure[s
       col = 'dodgerblue',xlab="Year",ylab="percentage.expenditure",main="percentage.expenditure in Australia",cex.main=0.8)
 ```
 
-##### We attempt to exclude extreme values for Adult.Mortality
+We attempt to exclude extreme values for Adult.Mortality
 
 ```{r}
 ## Number of reords before the clean up
@@ -121,7 +122,7 @@ for (i in 1:country_length) {
 nrow(subdata)
 ```
 
-##### We attempt to exclude extreme values for Polio
+We attempt to exclude extreme values for Polio
 
 ```{r}
 ## Number of reords before the clean up
@@ -153,7 +154,7 @@ for (i in 1:country_length) {
 nrow(subdata)
 ```
 
-##### We attempt to exclude extreme values for Diphtheria
+We attempt to exclude extreme values for Diphtheria
 
 ```{r}
 ## Number of reords before the clean up
@@ -185,7 +186,7 @@ for (i in 1:country_length) {
 nrow(subdata)
 ```
 
-##### We attempt to exclude extreme values for Hepatitis.B
+We attempt to exclude extreme values for Hepatitis.B
 
 ```{r}
 ## Number of reords before the clean up
@@ -217,13 +218,13 @@ for (i in 1:country_length) {
 nrow(subdata)
 ```
 
-##### Create a detaset that contains columns that we believe have predicting power of life expectancy and exclude columns that has unreasonable and unrepairable data. We exclude GDP, percentage.expenditure and population due to data issue.
+Create a detaset that contains columns that we believe have predicting power of life expectancy and exclude columns that has unreasonable and unrepairable data. We exclude GDP, percentage.expenditure and population due to data issue.
 
 ```{r}
 ## full data excluding year, percentage.expenditure, GDP and Population
 life_exp_full_data = subdata[,c(-1,-8,-17,-18)]
 ## Selected columns
-life_exp_clean_data = subdata[,c(2, 3, 4, 5, 7, 11, 13, 15, 16, 21，22)]
+life_exp_clean_data = subdata[,c(2, 3, 4, 5, 7, 11, 13, 15, 16, 21, 22)]
 
 ## Selected potential predictor to perform exhaustive search for models that perform well and pass assumption tests. ## Therefore not including schooling because it is corelated with Income.composition.of.resources
 ## Also excluded Diphtharia due to colinearity with Polio
@@ -231,7 +232,6 @@ life_exp_search_data = subdata[,c(2, 3, 4, 5, 7, 11, 13, 16, 21)]
 
 pairs(subdata[,c(4,13,15)])
 ```
-
 
 Fit an additive linear regression model for all available predictors
 ```{r}
@@ -247,14 +247,82 @@ Fit an interaction linear regression model up to all 2 way interactions for all 
 ```{r}
 le_inter_model <- lm(Life.expectancy ~ . * ., data = life_exp_clean_data)
 ```
-Perform backwards AIC to shrink number of predictors from initial full models
+
+### Model Diagnostics
+
+#### Leverage
+Identify high leverage data points
+```{r}
+full_add_lev <- hatvalues(le_full_add_model) > 2 * mean(hatvalues(le_full_add_model))
+add_lev <- hatvalues(le_add_model) > 2 * mean(hatvalues(le_add_model))
+inter_lev <- hatvalues(le_inter_model) > 2 * mean(hatvalues(le_inter_model))
+```
+
+#### Influential
+Identify influential data points
+```{r}
+full_add_inf <- cooks.distance(le_full_add_model) > 4 / length(cooks.distance(le_full_add_model))
+add_inf <- cooks.distance(le_add_model) > 4 / length(cooks.distance(le_add_model))
+inter_inf <- cooks.distance(le_inter_model) > 4 / length(cooks.distance(le_inter_model))
+```
+
+
+#### Data Removal & Variable Selection
+Refit models without high leverage or influential data poitns
+```{r}
+le_full_add_model <- lm(Life.expectancy ~ ., data = life_exp_full_data, subset = !full_add_lev | !full_add_inf)
+le_add_model <- lm(Life.expectancy ~ ., data = life_exp_clean_data, subset = !add_lev | !add_inf)
+le_inter_model <- lm(Life.expectancy ~ . * ., data = life_exp_clean_data, subset = !add_lev | !add_inf)
+```
+
+Perform backwards AIC to figure out which predictors are useful
 ```{r}
 le_full_add_model_sel <- step(le_full_add_model, trace = 0)
 le_add_model_sel <- step(le_add_model, trace = 0)
 le_inter_model_sel <- step(le_inter_model, trace = 0)
 ```
 
-##### High level summary of assumption violation and p-Value of initially fitted model
+#### Normality 
+
+Check normality assumption through a QQ-Plot for each of the models. The top 4 are the selected models, while the bottom 3 are the base models we started with.
+```{r}
+par(mfrow= c(2, 3))
+
+qqnorm(resid(le_full_add_model_sel))
+qqline(resid(le_full_add_model_sel))
+
+qqnorm(resid(le_add_model_sel))
+qqline(resid(le_add_model_sel))
+
+qqnorm(resid(le_inter_model_sel))
+qqline(resid(le_inter_model_sel))
+
+qqnorm(resid(le_full_add_model))
+qqline(resid(le_full_add_model))
+
+qqnorm(resid(le_add_model))
+qqline(resid(le_add_model))
+
+qqnorm(resid(le_inter_model))
+qqline(resid(le_inter_model))
+```
+
+#### Equal Variance 
+Check equal variance assumption for the full additive model
+```{r}
+par(mfrow = c(2, 3))
+
+plot(fitted(le_full_add_model), resid(le_full_add_model))
+plot(fitted(le_add_model), resid(le_add_model))
+plot(fitted(le_inter_model), resid(le_inter_model))
+
+hist(resid(le_full_add_model))
+hist(resid(le_add_model))
+hist(resid(le_inter_model))
+```
+
+#### Model Building Through Assumptions
+High level summary of assumption violation and p-Value of initially fitted model
 
 ```{r}
 report_frame=data.frame(
@@ -281,7 +349,7 @@ report_frame=data.frame(
 kable(report_frame)
 ```
 
-#### Despite the high r.squared value overall, all the models failed BP test and Shapiro test which indiate that the homoscedasticity assumption and normality assumption are violated. In below section, we attempt to search for a model from all possible combinations of selected additive predictors that has fair r.sqaure and passes both assumption tests.
+Despite the high r.squared value overall, all the models failed BP test and Shapiro test which indiate that the homoscedasticity assumption and normality assumption are violated. In below section, we attempt to search for a model from all possible combinations of selected additive predictors that has fair r.sqaure and passes both assumption tests.
 
 ```{r}
 
@@ -319,91 +387,19 @@ for (i in 1:length(call_list)){
 
 ```
 
-#### We searched through 255 combinations of models and only very few models that pass BP test and none seems to pass Shapiro test. So We proceed to pick one from the few models that pass the BP test.
+We searched through 255 combinations of models and only very few models that pass BP test and none seems to pass Shapiro test. So We proceed to pick one from the few models that pass the BP test.
 
 ```{r}
+par(mfrow = c(1, 2))
 hist(result_frame$bp_pval)
 hist(result_frame$shapiro_pval)
-kable(result_frame[result_frame$bp_pval>0.05,])
+kable(result_frame[result_frame$bp_pval>0.05, ])
 ```
 
-#### We choose the model with predictor Year + Status + BMI + Polio + HIV.AIDS + Income.composition.of.resources with 0.835 r_square value and barely passing the BP test as our 7th candidate model
+We choose the model with predictor Year + Status + BMI + Polio + HIV.AIDS + Income.composition.of.resources with 0.835 r_square value and barely passing the BP test as our 7th candidate model
 
 ```{r}
-BP_search_mod=lm(Life.expectancy ~ Year + Status + BMI + Polio + HIV.AIDS + Income.composition.of.resources,data=life_exp_search_data)
-```
-
-### Model Diagnostics
-
-#### Leverage
-Identify high leverage data points
-```{r}
-full_add_lev <- hatvalues(le_full_add_model) > 2 * mean(hatvalues(le_full_add_model))
-add_lev <- hatvalues(le_add_model) > 2 * mean(hatvalues(le_add_model))
-inter_lev <- hatvalues(le_inter_model) > 2 * mean(hatvalues(le_inter_model))
-```
-
-#### Influential
-Identify influential data points
-```{r}
-full_add_inf <- cooks.distance(le_full_add_model) > 4 / length(cooks.distance(le_full_add_model))
-add_inf <- cooks.distance(le_add_model) > 4 / length(cooks.distance(le_add_model))
-inter_inf <- cooks.distance(le_inter_model) > 4 / length(cooks.distance(le_inter_model))
-```
-
-Refit models without high leverage or influential data poitns
-```{r}
-le_full_add_model <- lm(Life.expectancy ~ ., data = life_exp_full_data, subset = !full_add_lev | !full_add_inf)
-le_add_model <- lm(Life.expectancy ~ ., data = life_exp_clean_data, subset = !add_lev | !add_inf)
-le_inter_model <- lm(Life.expectancy ~ . * ., data = life_exp_clean_data, subset = !add_lev | !add_inf)
-```
-
-#### Normality 
-
-Check normality assumption for the full additive model
-```{r}
-qqnorm(resid(le_full_add_model))
-qqline(resid(le_full_add_model))
-
-shapiro.test(resid(le_full_add_model))
-```
-
-Check normality assumption for the manually selected additive model
-```{r}
-qqnorm(resid(le_add_model))
-qqline(resid(le_add_model))
-
-shapiro.test(resid(le_add_model))
-```
-
-Check normality assumption for the 2 way interaction model
-```{r}
-qqnorm(resid(le_inter_model))
-qqline(resid(le_inter_model))
-
-shapiro.test(resid(le_inter_model))
-```
-
-#### Equal Variance
-Check equal variance assumption for the full additive model
-```{r}
-plot(fitted(le_full_add_model), resid(le_full_add_model))
-bptest(le_full_add_model)
-hist(resid(le_full_add_model))
-```
-
-Check equal variance assumption for the manually selected additive model
-```{r}
-plot(fitted(le_add_model), resid(le_add_model))
-bptest(le_add_model)
-hist(resid(le_add_model))
-```
-
-Check equal variance assumption for the 2 way interaction model
-```{r}
-plot(fitted(le_inter_model), resid(le_inter_model))
-bptest(le_inter_model)
-hist(resid(le_inter_model))
+bp_search_mod = lm(Life.expectancy ~ Year + Status + BMI + Polio + HIV.AIDS + Income.composition.of.resources,data=life_exp_search_data)
 ```
 
 ### Collinearity
@@ -413,21 +409,20 @@ Calculate the variance inflation factor for the predictors in each model
 vif_full_add <- vif(le_full_add_model)
 vif_add <- vif(le_add_model)
 vif_inter <- vif(le_inter_model)
+vif_full_sel <- vif(le_full_add_model_sel)
+vif_add_sel <- vif(le_add_model_sel)
+vif_inter_sel <- vif(le_inter_model_sel)
+vif_bp <- vif(bp_search_mod)
 ```
-
-
 
 ### Model Selection
 
-Perform backwards AIC to figure out which predictors are useful
+Perform an ANOVA test to see which model is preferred between the different models, with an $\alpha = .05$
 ```{r}
-le_full_add_model_sel <- step(le_full_add_model, trace = 0)
-le_add_model_sel <- step(le_add_model, trace = 0)
-le_inter_model_sel <- step(le_inter_model, trace = 0)
-```
+anova(le_add_model_sel, le_add_model)[2, 'Pr(>F)'] < .05
+anova(le_full_add_model_sel, le_full_add_model)[2, 'Pr(>F)'] < .05
+anova(le_inter_model_sel, le_inter_model)[2, 'Pr(>F)'] < .05
 
-Perform an ANOVA test to see which model is preferred between the manually selected additive model and the manually selected 2 way interaction model, with an $\alpha = .05$
-```{r}
 anova(le_add_model_sel, le_inter_model_sel)[2, 'Pr(>F)'] < .05
 ```
 
