@@ -53,8 +53,6 @@ pairs(life_expectancy[, c(4, 20, 21, 22)], col = 'dodgerblue')
 
 ## Data Cleaning
 
-Clean up source data by excluding records with NA value in the columns of interest. Also exclude records with unreasonable records. For example Income.composition.of.resources = 0 does not seem reasonable comparing to the overall distribution.
-
 ```{r}
 ## remove rows with NA 
 subdata = life_expectancy[complete.cases(life_expectancy), ]
@@ -64,9 +62,7 @@ subdata = subset(subdata,subdata$Income.composition.of.resources!=0)
 subdata = subset(subdata,subdata$BMI>8)
 ```
 
-Additionally upon further investigating the data, we found several data issues with some columns where data varies greatly for the same country year over year. In many cases, it appears to be input error (i.e. missing a digit). We try to eliminate records that are out of ordinary by comparing to the average of the country for some columns. But there are some columns that are so messy that we deem beyond repair therefore excluded from our analysis.
-
-Below are the plots showing we have discovered data issue where some values appear to be miss coded and miss a digit. We have come up with a method to exclude values that are way too off comparing to other years within the same country 
+Below are the plots showing we have discovered data issue where some values appear to be miss coded and miss a digit. We have come up with a method to exclude values that are way too off, compared to other years within the same country.
 
 ```{r}
 ##View(subdata[1:100,])
@@ -284,7 +280,7 @@ le_inter_model_sel <- step(le_inter_model, trace = 0)
 
 #### Normality 
 
-Check normality assumption through a QQ-Plot for each of the models. The top 4 are the selected models, while the bottom 3 are the base models we started with.
+Check normality assumption through a QQ-Plot for each of the models. The top 3 are the selected models, while the bottom 3 are the base models we started with.
 ```{r}
 par(mfrow= c(2, 3))
 
@@ -322,7 +318,7 @@ hist(resid(le_inter_model))
 ```
 
 #### Model Building Through Assumptions
-High level summary of assumption violation and p-Value of initially fitted model
+High level summary of assumption violations and P-Values of initialy fitted models
 
 ```{r}
 report_frame=data.frame(
@@ -349,7 +345,7 @@ report_frame=data.frame(
 kable(report_frame)
 ```
 
-Despite the high r.squared value overall, all the models failed BP test and Shapiro test which indiate that the homoscedasticity assumption and normality assumption are violated. In below section, we attempt to search for a model from all possible combinations of selected additive predictors that has fair r.sqaure and passes both assumption tests.
+We attempt to search for a model from all possible combinations of selected additive predictors that has a fair R-Squared value and passes both assumption tests.
 
 ```{r}
 
@@ -387,7 +383,7 @@ for (i in 1:length(call_list)){
 
 ```
 
-We searched through 255 combinations of models and only very few models that pass BP test and none seems to pass Shapiro test. So We proceed to pick one from the few models that pass the BP test.
+Pick a model from the few models that pass the BP test.
 
 ```{r}
 par(mfrow = c(1, 2))
@@ -432,7 +428,15 @@ The larger, 2 way interaction model, is preferred.
 
 # Discussion
 
-The first thing we did was create a pairs plot for every predictor as it related to life expectancy, the response we chose to use for this project. Looking at the pairs plot, we selected a series of predictors that we felt were useful to the dataset, but also predictors that we thought would be interesting to analyze. Then, we decided to fit 3 models: an additive model with all available predictors, an additive model with the predictors we manually selected, and a 2 way interaction model with the manually selected predictors, as well. We chose to do this because we knew the dataset had too many predictors to be able to accurately fit anything beyond an additive model. So, we included the full additive model for comparison, but were ultimately focused on the predictors that we manually selected.
+The first thing we did was perform data cleaning on our dataset. Upon intial inspection, we realized that there was a lot of data that had NA values, as well as some outliers. So, we cleaned up the source data by excluding records with NA value in the columns of interest. Also, we excluded records with unreasonable records. For example, Income.composition.of.resources = 0 does not seem reasonable comparing to the overall distribution. Additionally, upon further investigating the data, we found several data issues with some columns where data varies greatly for the same country year over year. In many cases, it appears to be input error (i.e. missing a digit). We try to eliminate records that are out of ordinary by comparing to the average of the country for some columns. But there are some columns that are so messy that we deem beyond repair, therefore are excluded from our analysis. We also created plots to help aid in this process, all of which can be seen in the methods section.
+
+Once we cleaned up the data amongst various columns and rows, we created a pairs plot for every predictor as it related to life expectancy, the response we chose to use for this project. Looking at the pairs plot, we selected a series of predictors that we felt were useful to the dataset, but also predictors that we thought would be interesting to analyze. Then, we decided to fit 3 models: an additive model with all available predictors, an additive model with the predictors we manually selected, and a 2 way interaction model with the manually selected predictors, as well. We chose to do this because we knew the dataset had too many predictors to be able to accurately fit anything beyond an additive model. So, we included the full additive model for comparison, but were ultimately focused on the predictors that we manually selected.
+
+Next, we did some diagnostics of the various models we were using. First, we identified high leverage and influential points in the dataset, according to the standard procedure outlined in the textbook. Once we identified these data points, we removed them from the dataset and refit the models without them. After this, we performed backwards AIC selection on the models to remove some of the predictors that were not useful. Now we have 6 models, the original 3 models we created, as well as their selected couterparts. But are these models good, LINE according models? To figure this out, we performed various diagnostics. We plotted a QQ plot for each model to test their normality assumptions. What we found was that the graphs suggested a violation of assumptions, but as we know, the graphs can be misleading and not always clear cut to read. So, we also performed the Shapiro-Wilks test, and found that they indeed were suspect for the normality assumption. Furthermore, we used a fitted vs residual plot, a histogram of the residuals, and a BP test on each model to test the equal variance assumption. The fitted vs residual, while not perfect, looked pretty good overall. The data, for the most part, was centered around 0, though there was certainly outlier data. Also, the data seemed to be more highly concentrated to the right side of the graph. The histogram of the residuals, upon analysis, did seem to follow a normal distribution. The BP tests, however, all failed to pass, causing suspicion of the equal variance assumption. Despite the high R-Squared value overall, all the models failed the BP test and Shapiro test which indiate that the homoscedasticity assumption and normality assumption are violated. 
+
+In an effort to find a better model, we attempt to search for a model from all possible combinations of selected additive predictors that has a fair R-Squared value and passes both assumption tests. We searched through 255 combinations of models and there were only a handful of models that pass the BP test; none seemed to pass the Shapiro test. So we proceed to pick one from the few models that pass the BP test. We choose the model with predictors Year + Status + BMI + Polio + HIV.AIDS + Income.composition.of.resources with 0.835 R-Squared value and barely passing the BP test as our 7th candidate model.
+
+Next, we analyzed the collinearity of each model and performed an ANOVA test on each model with its selected counterpart. Through the ANOVA test, the two way interaction model was selected. However, through analyzing the collinearity of each model's predictors, as well as taking into consideration our goal of analyzing immunization as it relates to life expectancy, we chose the manually selected, additive model derived from the backwards AIC process. We felt that this model would be better for predicting life expectancy as it relates to immunization as opposed to the ANOVA selected interaction model. 
 
 # Appendix
 
