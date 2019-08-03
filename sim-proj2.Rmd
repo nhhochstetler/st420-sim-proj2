@@ -424,7 +424,7 @@ anova(le_add_model_sel, le_inter_model_sel)[2, 'Pr(>F)'] < .05
 
 # Results
 
-### Overall we fitted and selected 7 candidate models and the below is a summary of how effective do they make predictions and their assumption test scores. 
+Overall we fitted and selected 7 candidate models and the below is a summary of how effective do they make predictions and their assumption test scores. 
 
 ```{r}
 report_frame=data.frame(
@@ -461,50 +461,50 @@ report_frame=data.frame(
 kable(report_frame)
 ```
 
-### Despite the model selected through exhaustive assumption test search passes BP test and show very little variable inflation. But the prediction accruacy is in general lacking behind the other models. We would like to compare the rest of the model through anova test
+Despite the model selected through exhaustive assumption test search passes BP test and show very little variable inflation. But the prediction accruacy is in general lacking behind the other models. We would like to compare the rest of the model through anova test
 
 AIC_manual_add Vs Full_manual_add
 
-**We prefer AIC_manual_add**
+- **We prefer AIC_manual_add**
 
 AIC_add Vs Full_add
 
-**We prefer AIC_add**
+- **We prefer AIC_add**
 
 AIC_int Vs Full_int
 
-**We prefer AIC_int**
+- **We prefer AIC_int**
 
-### With three candedates, we firstly proceed to eliminate the interactive model chosen through backward AIC. Despite its superior prediction accuracy, it is very complex and has large amount of collinearity. Both work agaisnt our goal of analyzing the relationship between various factors and life expectancy. We proceed to compare AIC_manual_add and AIC_add
+With three candidates, we firstly proceed to eliminate the interactive model chosen through backward AIC. Despite its superior prediction accuracy, it is very complex and has a large amount of collinearity. Both work agaisnt our goal of analyzing the relationship between various factors and life expectancy. We proceed to compare AIC_manual_add and AIC_add
 
 ```{r}
 summary(le_full_add_model_sel)
 summary(le_add_model_sel)
 ```
 
-### Judging by the VIF in the summary table, we know that AIC_add model has more variables that are correlated and the fact that AIC_add model has almost double the amount of predictors than AIC_manual_add moedel. We would like to take a closer look at AIC_manual_add model and see if the coefficients are making sense
+Judging by the VIF in the summary table, we know that AIC_add model has more variables that are correlated and the fact that AIC_add model has almost double the amount of predictors than AIC_manual_add moedel. We would like to take a closer look at AIC_manual_add model and see if the coefficients make sense
 
-**Status**: (coef -0.68701357) The model shows with everything held equal, Developing country has 0.687014 shoter life expectancy then Developed country. Makes sense.
+**Status**: (coef -0.68701357) The model shows with everything held equal, developing countries have 0.687014 shorter life expectancy then developed countries. This makes a lot of sense.
 
-**Adult.Mortality**: (coef -0.04385859) The model shows the higher the amount of people die between 15 and 60 years per 1000 population the lower than life expectancy of that country. Makes sense.
+**Adult.Mortality**: (coef -0.04385859) The model shows that the higher the amount of people who die between 15 and 60 years per 1000 population, the lower the life expectancy of that country. Makes sense.
 
 **BMI**: (coef 0.02828238) The model shows the higher Average Body Mass Index of entire population the higher the life expectancy of that country. Makes sense since BMI in general represents the nutrition level of the whole population.
 
-**Diphtheria**: (coef 0.04194903) The model shows the higher Diphtheria tetanus toxoid and pertussis (DTP3) immunization coverage among 1-year-olds (%) the higher the life expectancy of that country. Makes sense this directly supports our goal of providing evidence that immunization helps overall life expectancy. We alos found high correlation between Diphtheria and Polio which means this positive relation between Diphtheria and life expectancy also applies to Polio immunization and immunization in general
+**Diphtheria**: (coef 0.04194903) The model shows the higher Diphtheria tetanus toxoid and pertussis (DTP3) immunization coverage among 1-year-olds (%), the higher the life expectancy of that country. Makes sense; this directly supports our goal of providing evidence that immunization helps overall life expectancy. We also found a high correlation between Diphtheria and Polio which means this positive relation between Diphtheria and life expectancy also applies to Polio immunization and immunization in general.
 
 ```{r}
 pairs(subdata[,c(4,13,15)])
 ```
 
-**Income.composition.of.resources**: (coef 24.02356163) The model shows the higher Human Development Index in terms of income composition of resources the higher the life expectancy of that country. Makes sense since richer country and more developed country has better health care and thus healthier population.
+**Income.composition.of.resources**: (coef 24.02356163) The model shows the higher Human Development Index in terms of income composition of resources, the higher the life expectancy of that country. Makes sense since richer countries and more developed countries have better health care and thus healthier populations.
 
-**Schooling**: (coef -0.14657182) The coefficient of Number of years of Schooling(years) does not make intuitive sense but knowing that Schooling is correlated with Income.composition.of.resources so in combination these factors should previde accurate prediction
+**Schooling**: (coef -0.14657182) The coefficient of Number of years of Schooling (years) does not make intuitive sense, but knowing that Schooling is correlated with Income.composition.of.resources does. So the combination these factors should provide accurate predictions.
 
 ```{r}
 pairs(subdata[,c(4,21,22)])
 ```
 
-### We will check the model assumption of the final selected model
+We will check the model assumption of the final selected model
 
 ```{r}
 par(mfrow = c(1, 2))
@@ -514,11 +514,11 @@ plot(fitted(le_add_model), resid(le_add_model),main="QQ Norm plot for AIC_manual
 abline(h = 0, col = "darkorange", lwd = 2)
 ```
 
-**Despite the model failed Shapiro test, but given the fact that we searched through all combination of predictors and failed to find any additive model that could pass the Shapiro test, we believe this issue could be due to the given data set is not able to cover all variance and to be fair, the life expectancy of a country is immensely complex topic and the number deciding factors could be hunderds**
+**Despite that the model failed the Shapiro test, but given the fact that we searched through all combination of predictors and failed to find any additive model that could pass the Shapiro test, we believe this issue could be due to the given data set is not able to cover all variance. Furthermore, the life expectancy of a country is an immensely complex topic and the number of deciding factors could be hundreds**
 
-**The fitted vd residual plot looks not as bad as the QQ norm. Despite the model failed BP test, We don't see a clear pattern in the fitted vs residual graph.**
+**The fitted vs residual plot does not look as bad as the QQ norm plot. Despite the model failed BP test, we don't see a clear pattern in the fitted vs residual graph.**
 
-**We ultimately decide to Choose the additive model that was selected through backward AIC from the poll of predictors that we manually selected.**
+**Ultimately, we decided to choose the additive model that was selected through backward AIC from the poll of predictors that we manually selected.**
 
 # Discussion
 
